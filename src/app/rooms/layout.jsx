@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { auth, db } from '@/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 
-const layout = ({ children }) => {
+const Layout = ({ children }) => {
   const [user] = useAuthState(auth);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,4 +80,4 @@ const layout = ({ children }) => {
   );
 };
 
-export default layout;
+export default Layout;
