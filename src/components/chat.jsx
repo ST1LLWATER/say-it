@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 
-const Chat = ({ messages }) => {
+const Chat = ({ messages, type }) => {
   const [message, setMessage] = useState('');
   const params = useParams();
   const [user] = useAuthState(auth);
@@ -23,6 +23,21 @@ const Chat = ({ messages }) => {
         timestamp: serverTimestamp(),
       };
     },
+  };
+  const addMessageToDM = async (roomId) => {
+    const roomRef = doc(db, 'direct_messages', roomId);
+    const messagesRef = collection(roomRef, 'messages').withConverter(
+      messageConverter
+    );
+
+    const messageData = {
+      sender: user.displayName,
+      content: message,
+    };
+
+    await addDoc(messagesRef, messageData);
+
+    setMessage('');
   };
 
   const addMessageToRoom = async (roomId) => {
@@ -60,7 +75,11 @@ const Chat = ({ messages }) => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void addMessageToRoom(params.id, message);
+            if (type == 'direct') {
+              void addMessageToDM(params.id, message);
+            } else {
+              void addMessageToRoom(params.id, message);
+            }
           }}
           className="flex gap-x-4 justify-center mt-4 items-center"
         >
@@ -79,7 +98,7 @@ const Chat = ({ messages }) => {
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg  block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg  block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
               placeholder="Send Message"
             />
           </div>

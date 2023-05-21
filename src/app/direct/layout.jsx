@@ -4,7 +4,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/firebase';
-import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+} from 'firebase/firestore';
 
 const layout = ({ children }) => {
   const [user] = useAuthState(auth);
@@ -19,39 +25,39 @@ const layout = ({ children }) => {
   //   };
   // }, []);
   const getRooms = useCallback(async () => {
-    try {
-      const userDocRef = doc(db, 'users', user.email);
-      const userDocSnapshot = await getDoc(userDocRef);
+    const querySnapshot = await getDocs(collection(db, 'direct'));
+    setRooms(querySnapshot.docs.map((doc) => doc.data()));
+  }, []);
 
-      if (userDocSnapshot.exists()) {
-        const userData = userDocSnapshot.data();
-        const userRooms = userData.rooms || [];
+  useEffect(() => {
+    if (!user) return;
+    const userDocRef = doc(db, 'users', user.email);
 
-        const roomPromises = userRooms.map(async (roomId) => {
-          const roomDocRef = doc(db, 'rooms', roomId);
-          const roomDocSnapshot = await getDoc(roomDocRef);
+    const unsubscribe = onSnapshot(userDocRef, async (docSnapshot) => {
+      if (docSnapshot.exists()) {
+        const userData = docSnapshot.data();
+        const userDms = userData.dms || [];
 
-          if (roomDocSnapshot.exists()) {
-            return { id: roomId, ...roomDocSnapshot.data() };
-          } else {
-            console.log(`Room document not found for ID: ${roomId}`);
-            return null;
+        // Fetch the direct messages based on the IDs in userDms
+        const directMessagesPromises = userDms.map(async (dmId) => {
+          const dmDocRef = doc(db, 'direct_messages', dmId);
+          const dmDocSnapshot = await getDoc(dmDocRef);
+          if (dmDocSnapshot.exists()) {
+            return { id: dmDocSnapshot.id, ...dmDocSnapshot.data() };
           }
         });
 
-        const roomDocs = await Promise.all(roomPromises);
-        const userRoomsData = roomDocs.filter((room) => room !== null);
-        setRooms(userRoomsData); // Set the fetched rooms to the rooms state
-      } else {
-        toast.error('User does not exist!');
-      }
-    } catch (error) {
-      console.error('Error retrieving user rooms:', error);
-      return [];
-    }
-  }, []);
+        const directMessages = await Promise.all(directMessagesPromises);
+        // Filter out any undefined elements (if a DM document doesn't exist)
+        const filteredDirectMessages = directMessages.filter(Boolean);
 
-  console.log(rooms);
+        // Update the state with the fetched direct messages
+        setRooms(filteredDirectMessages);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user?.email]);
 
   useEffect(() => {
     if (!user) {
@@ -70,7 +76,7 @@ const layout = ({ children }) => {
 
   return (
     <div className="flex flex-1 overflow-y-hidden">
-      <Sidenav rooms={rooms} getRooms={getRooms} type="rooms" />
+      <Sidenav rooms={rooms} getRooms={getRooms} type="direct" />
       <div className="flex flex-col w-full h-full flex-1 overflow-y-hidden">
         <div className="container h-full mx-auto bg-gray-800 shadow">
           {children}

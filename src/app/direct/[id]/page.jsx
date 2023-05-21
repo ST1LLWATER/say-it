@@ -19,7 +19,12 @@ const Room = () => {
 
   useEffect(() => {
     const roomId = params.id;
-    const roomMessagesRef = collection(db, 'rooms', roomId, 'messages');
+    const roomMessagesRef = collection(
+      db,
+      'direct_messages',
+      roomId,
+      'messages'
+    );
     const roomMessagesQuery = query(
       roomMessagesRef,
       orderBy('timestamp', 'desc'),
@@ -44,7 +49,7 @@ const Room = () => {
 
   return (
     <>
-      <Chat messages={messages} type="room" />
+      <Chat messages={messages} type="direct" />
     </>
   );
 };

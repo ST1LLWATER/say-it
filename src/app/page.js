@@ -10,8 +10,12 @@ const Welcome = () => {
   const [user] = useAuthState(auth);
   const router = useRouter();
   const googleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+      console.error('Error signing in:', error);
+    }
   };
 
   console.log('RERENDER TEST HOMEPAGE');

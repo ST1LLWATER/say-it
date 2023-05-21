@@ -1,6 +1,27 @@
-import React from 'react';
+'use client';
+import { auth, db } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import React, { useEffect } from 'react';
+import { useAuthState } from 'react-firebase-hooks/auth';
 
 const Home = () => {
+  const [user] = useAuthState(auth);
+
+  useEffect(() => {
+    if (!user) return;
+    createUserIfNotExists();
+  }, []);
+
+  const createUserIfNotExists = async () => {
+    const userDocRef = doc(db, 'users', user.email);
+    const userDocSnapshot = await getDoc(userDocRef);
+
+    if (!userDocSnapshot.exists()) {
+      // Create new user document with rooms and dms arrays
+      await setDoc(userDocRef, { rooms: [], dms: [] });
+      console.log('New user document created successfully!');
+    }
+  };
   console.log('RERENDER TEST ROOMS PAGE');
 
   return (

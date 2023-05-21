@@ -2,11 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import Modal from './modal';
 import { useRouter } from 'next/navigation';
-import { auth, db } from '../firebase';
+import { auth, db } from '@/firebase';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import {
   addDoc,
-  getDocs,
   collection,
   serverTimestamp,
   updateDoc,
@@ -15,19 +14,19 @@ import {
   doc,
   arrayUnion,
 } from 'firebase/firestore';
+import { MdContentCopy } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
 
-const Sidenav = () => {
+const Sidenav = ({ rooms, getRooms, type }) => {
   const [open, setOpen] = useState(false);
   const [room_id, setRoomId] = useState('Loading...');
-  const [rooms, setRooms] = useState([]);
   const [user] = useAuthState(auth);
   const router = useRouter();
 
-  const getRooms = async () => {
-    const querySnapshot = await getDocs(collection(db, 'rooms'));
-    setRooms(querySnapshot.docs.map((doc) => doc.data()));
-  };
+  // const getRooms = async () => {
+  //   const querySnapshot = await getDocs(collection(db, 'rooms'));
+  //   setRooms(querySnapshot.docs.map((doc) => doc.data()));
+  // };
 
   useEffect(() => {
     getRooms();
@@ -79,6 +78,49 @@ const Sidenav = () => {
     }
   };
 
+  const sendDm = async (e) => {
+    e.preventDefault();
+    const email = prompt('Enter email of the user you want to DM');
+    if (!email) {
+      toast.error('Please enter an email!');
+      return;
+    }
+
+    try {
+      const userDocRef = doc(db, 'users', email);
+      const userDocSnapshot = await getDoc(userDocRef);
+
+      if (!userDocSnapshot.exists()) {
+        toast.error('User does not exist!');
+        return;
+      }
+
+      const dmRef = await addDoc(collection(db, 'direct_messages'), {
+        participants: [user.email, email],
+        name: email.split('@')[0],
+      });
+
+      const dmId = dmRef.id;
+
+      await updateDoc(dmRef, { room_id: dmId });
+
+      const dmUserDocRef = doc(db, 'users', email);
+      await updateDoc(dmUserDocRef, {
+        dms: arrayUnion(dmId),
+      });
+
+      const currentUserDocRef = doc(db, 'users', user.email);
+      await updateDoc(currentUserDocRef, {
+        dms: arrayUnion(dmId),
+      });
+
+      toast.success('Direct message created successfully!');
+    } catch (error) {
+      console.error('Error sending DM:', error);
+      toast.error('Error sending DM!');
+    }
+  };
+
   const createRoom = async () => {
     const docRef = await addDoc(collection(db, 'rooms'), {
       name: user.displayName.split(' ')[0] + "'s Room",
@@ -115,7 +157,7 @@ const Sidenav = () => {
 
   const handleRoomClick = async (e, room_id) => {
     e.preventDefault();
-    router.push(`/rooms/${room_id}`);
+    router.push(`/${type}/${room_id}`);
   };
 
   return (
@@ -129,26 +171,36 @@ const Sidenav = () => {
       overflow-hidden
      "
       >
-        <div className="flex gap-2 px-2 py-4 justify-around">
+        {type === 'rooms' ? (
+          <div className="flex gap-2 px-2 py-4 justify-around">
+            <button
+              type="button"
+              onClick={() => {
+                void createRoom({ room_id });
+                setOpen(true);
+              }}
+              className="text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 font-medium rounded-lg text-sm text-center px-6 py-2"
+            >
+              Create Room
+            </button>
+            <button
+              type="button"
+              onClick={joinRoom}
+              className="text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 font-medium rounded-lg text-sm text-center px-6 py-2"
+            >
+              Join Room
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={() => {
-              void createRoom({ room_id });
-              setOpen(true);
-            }}
-            className="text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 font-medium rounded-lg text-sm text-center px-6 py-2"
+            onClick={sendDm}
+            className="text-white bg-gradient-to-r from-purple-500 my-2 mx-2 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 font-medium rounded-lg text-sm text-center px-6 py-2"
           >
-            Create Room
+            Create New DM
           </button>
-          <button
-            type="button"
-            onClick={joinRoom}
-            className="text-white bg-gradient-to-r from-purple-500 via-purple-600 to-purple-700 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-purple-300 dark:focus:ring-purple-800 font-medium rounded-lg text-sm text-center px-6 py-2"
-          >
-            Join Room
-          </button>
-        </div>
-        <div className="flex flex-col px-2 flex-1 py-3 h-5/6 sidenav overflow-y-scroll">
+        )}
+        <div className="flex flex-col px-2 flex-1 py-3 h-5/6 sidenav overflow-y-auto">
           {rooms && rooms.length > 0 ? (
             <>
               {rooms.map((room, key) => {
@@ -167,9 +219,25 @@ const Sidenav = () => {
                       />
                     </div>
                     <div className="flex flex-col text-sm font-Rubik font-semibold justify-center items-start">
-                      <div>{room.name}</div>
-                      <div className="text-gray-400 text-xs">
-                        {room.creator}
+                      <div>
+                        {type == 'direct'
+                          ? room.participants
+                              .filter(
+                                (participant) => participant !== user.email
+                              )[0]
+                              .split('@')[0]
+                          : room.name}
+                      </div>
+                      <div className="text-gray-400 flex justify-center items-center gap-2 text-xs">
+                        {room.id}
+                        <span
+                          onClick={() => {
+                            navigator.clipboard.writeText(room.id);
+                            toast.success('Copied to clipboard!');
+                          }}
+                        >
+                          <MdContentCopy />
+                        </span>
                       </div>
                     </div>
                   </div>
