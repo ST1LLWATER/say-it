@@ -18,7 +18,7 @@ const Home = () => {
 
     if (!userDocSnapshot.exists()) {
       // Create new user document with rooms and dms arrays
-      await setDoc(userDocRef, { rooms: [], dms: [] });
+      await setDoc(userDocRef, { rooms: [], dms: [], dmEmails: [] });
       console.log('New user document created successfully!');
     }
   };

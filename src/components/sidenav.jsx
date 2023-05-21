@@ -86,12 +86,24 @@ const Sidenav = ({ rooms, getRooms, type }) => {
       return;
     }
 
+    if (email === user.email) {
+      toast.error('You cannot DM yourself!');
+      return;
+    }
+
     try {
       const userDocRef = doc(db, 'users', email);
       const userDocSnapshot = await getDoc(userDocRef);
 
       if (!userDocSnapshot.exists()) {
         toast.error('User does not exist!');
+        return;
+      }
+
+      // check if user has the email in dmEmails array
+      const dmEmails = userDocSnapshot.data().dmEmails;
+      if (dmEmails.includes(user.email)) {
+        toast.error('You already have a DM with this user!');
         return;
       }
 
@@ -107,11 +119,13 @@ const Sidenav = ({ rooms, getRooms, type }) => {
       const dmUserDocRef = doc(db, 'users', email);
       await updateDoc(dmUserDocRef, {
         dms: arrayUnion(dmId),
+        dmEmails: arrayUnion(user.email),
       });
 
       const currentUserDocRef = doc(db, 'users', user.email);
       await updateDoc(currentUserDocRef, {
         dms: arrayUnion(dmId),
+        dmEmails: arrayUnion(email),
       });
 
       toast.success('Direct message created successfully!');
