@@ -15,8 +15,6 @@ const Room = () => {
   const [messages, setMessages] = useState([]);
   const params = useParams();
 
-  console.log('RERENDER TEST INNER ROOMS PAGE');
-
   useEffect(() => {
     const roomId = params.id;
     const roomMessagesRef = collection(

@@ -9,6 +9,8 @@ import { GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 const Welcome = () => {
   const [user] = useAuthState(auth);
   const router = useRouter();
+
+  // Function to handle Google sign-in
   const googleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
@@ -18,9 +20,8 @@ const Welcome = () => {
     }
   };
 
-  console.log('RERENDER TEST HOMEPAGE');
-
   useEffect(() => {
+    // Redirect to the rooms page if user is already signed in
     if (user) {
       router.push('/rooms');
     }
@@ -32,7 +33,7 @@ const Welcome = () => {
         Welcome to Say-It Live Chat.
       </h2>
       <p className="text-2xl font-bold text-center text-blue-500">
-        Sign in with Google to chat with with your fellow mates.
+        Sign in with Google to chat with your fellow mates.
       </p>
       <button className="border-0 w-full flex justify-center items-center bg-transparent">
         <img

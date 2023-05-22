@@ -23,15 +23,11 @@ const Sidenav = ({ rooms, getRooms, type }) => {
   const [user] = useAuthState(auth);
   const router = useRouter();
 
-  // const getRooms = async () => {
-  //   const querySnapshot = await getDocs(collection(db, 'rooms'));
-  //   setRooms(querySnapshot.docs.map((doc) => doc.data()));
-  // };
-
   useEffect(() => {
     getRooms();
   }, []);
 
+  // Function to join a room
   const joinRoom = async (e) => {
     e.preventDefault();
     const roomId = prompt('Enter Room ID');
@@ -78,6 +74,7 @@ const Sidenav = ({ rooms, getRooms, type }) => {
     }
   };
 
+  // Function to send a direct message (DM)
   const sendDm = async (e) => {
     e.preventDefault();
     const email = prompt('Enter email of the user you want to DM');
@@ -107,6 +104,7 @@ const Sidenav = ({ rooms, getRooms, type }) => {
         return;
       }
 
+      // Create A New Direct Message
       const dmRef = await addDoc(collection(db, 'direct_messages'), {
         participants: [user.email, email],
         name: email.split('@')[0],
@@ -116,12 +114,14 @@ const Sidenav = ({ rooms, getRooms, type }) => {
 
       await updateDoc(dmRef, { room_id: dmId });
 
+      // Add the direct message DM id to the receiver's dm array
       const dmUserDocRef = doc(db, 'users', email);
       await updateDoc(dmUserDocRef, {
         dms: arrayUnion(dmId),
         dmEmails: arrayUnion(user.email),
       });
 
+      // Add the direct message DM id to the current user's dm array
       const currentUserDocRef = doc(db, 'users', user.email);
       await updateDoc(currentUserDocRef, {
         dms: arrayUnion(dmId),
@@ -135,6 +135,7 @@ const Sidenav = ({ rooms, getRooms, type }) => {
     }
   };
 
+  // Function to create a new room
   const createRoom = async () => {
     const docRef = await addDoc(collection(db, 'rooms'), {
       name: user.displayName.split(' ')[0] + "'s Room",
@@ -169,6 +170,7 @@ const Sidenav = ({ rooms, getRooms, type }) => {
     getRooms();
   };
 
+  // Function to handle room click event
   const handleRoomClick = async (e, room_id) => {
     e.preventDefault();
     router.push(`/${type}/${room_id}`);

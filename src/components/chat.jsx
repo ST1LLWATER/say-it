@@ -1,4 +1,3 @@
-'use client';
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -16,6 +15,7 @@ const Chat = ({ messages, type }) => {
   const params = useParams();
   const [user] = useAuthState(auth);
 
+  // Firestore message converter
   const messageConverter = {
     toFirestore: (messageData) => {
       return {
@@ -24,6 +24,8 @@ const Chat = ({ messages, type }) => {
       };
     },
   };
+
+  // Function to add a message to a direct message (DM) room
   const addMessageToDM = async (roomId) => {
     const roomRef = doc(db, 'direct_messages', roomId);
     const messagesRef = collection(roomRef, 'messages').withConverter(
@@ -40,6 +42,7 @@ const Chat = ({ messages, type }) => {
     setMessage('');
   };
 
+  // Function to add a message to a room
   const addMessageToRoom = async (roomId) => {
     const roomRef = doc(db, 'rooms', roomId);
     const messagesRef = collection(roomRef, 'messages').withConverter(
@@ -75,7 +78,7 @@ const Chat = ({ messages, type }) => {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (type == 'direct') {
+            if (type === 'direct') {
               void addMessageToDM(params.id, message);
             } else {
               void addMessageToRoom(params.id, message);
@@ -84,21 +87,11 @@ const Chat = ({ messages, type }) => {
           className="flex gap-x-4 justify-center mt-4 items-center"
         >
           <div className="w-full">
-            {/* <input
-              type="text"
-              id="text"
-              name="text"
-              value={message}
-              placeholder="Send Message"
-              onChange={(e) => setMessage(e.target.value)}
-              autoComplete="off"
-              className="w-full bg-white bg-opacity-50 rounded border border-gray-100 focus:border-rose-700 focus:ring-2 focus:ring-rose-200 text-base outline-none text-gray-700 py-1 px-3 transition-colors duration-200 ease-in-out"
-            /> */}
             <input
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg  block w-full p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white"
               placeholder="Send Message"
             />
           </div>

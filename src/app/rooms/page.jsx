@@ -12,17 +12,20 @@ const Home = () => {
     createUserIfNotExists();
   }, []);
 
+  // Function to create a user document if it does not already exist
   const createUserIfNotExists = async () => {
+    // Get the reference to the user document in Firestore
     const userDocRef = doc(db, 'users', user.email);
+
+    // Get the snapshot of the user document
     const userDocSnapshot = await getDoc(userDocRef);
 
     if (!userDocSnapshot.exists()) {
-      // Create new user document with rooms and dms arrays
+      // Create a new user document with rooms and dms arrays
       await setDoc(userDocRef, { rooms: [], dms: [], dmEmails: [] });
       console.log('New user document created successfully!');
     }
   };
-  console.log('RERENDER TEST ROOMS PAGE');
 
   return (
     <div className="flex justify-center h-full items-center">
