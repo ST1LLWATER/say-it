@@ -5,6 +5,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/firebase';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
+import {toast} from "react-hot-toast";
 
 const Layout = ({ children }) => {
   const [user] = useAuthState(auth);
@@ -12,12 +13,7 @@ const Layout = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // useCallback(() => {
-  //   const getRooms = async () => {
-  //     const querySnapshot = await getDocs(collection(db, 'rooms'));
-  //     setRooms(querySnapshot.docs.map((doc) => doc.data()));
-  //   };
-  // }, []);
+
   const getRooms = useCallback(async () => {
     try {
       const userDocRef = doc(db, 'users', user.email);
